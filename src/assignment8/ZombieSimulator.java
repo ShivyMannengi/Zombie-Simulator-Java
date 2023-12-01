@@ -14,109 +14,137 @@ import support.cse131.Timing;
  * @author Dennis Cosgrove (http://www.cse.wustl.edu/~cosgroved/)
  */
 public class ZombieSimulator {
-	private static final String ZOMBIE_TOKEN_VALUE = "Zombie";
+        private static final String ZOMBIE_TOKEN_VALUE = "Zombie";
+        private Entity[] entities;
+        private int zomCount;
 
 
-	/**
-	 * Constructs a ZombieSimulator with an empty array of Entities.
-	 */
-	public ZombieSimulator(int n) {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
+        /**
+         * Constructs a ZombieSimulator with an empty array of Entities.
+         */
+        public ZombieSimulator(int n) {
+                 entities = new Entity[n];
 
-	/**
-	 * @return the current array of entities 
-	 */
-	public Entity[] getEntities() {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
 
-	/** 
-	 * Reads an entire zombie simulation file from a specified ArgsProcessor, adding
-	 * each Entity to the array of entities.
-	 *
-	 * Assume that N (the integer indicating how many entities are in the simulation) has already been read in
-	 * and passed into the constructor.
-	 *
-	 * @param in Scanner to read the complete zombie simulation file format.
-	 */
-	public void readEntities(Scanner in) {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
+        }
 
-	/**
-	 * @return the number of zombies in entities.
-	 */
-	public int getZombieCount() {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
+        /**
+         * @return the current array of entities
+         */
+        public Entity[] getEntities() {
+                return entities;
+        }
 
-	/**
-	 * @return the number of nonzombies in entities.
-	 */
-	public int getNonzombieCount() {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
+        /**
+         * Reads an entire zombie simulation file from a specified ArgsProcessor, adding
+         * each Entity to the array of entities.
+         *
+         * Assume that N (the integer indicating how many entities are in the simulation) has already been read in
+         * and passed into the constructor.
+         *
+         * @param in Scanner to read the complete zombie simulation file format.
+         */
+        public void readEntities(Scanner in) {
 
-	/**
-	 * Draws a frame of the simulation.
-	 */
-	public void draw() {
-		StdDraw.clear();
+                zomCount = 0;
+                for(int i = 0; i < entities.length; i++) {
 
-		// NOTE: feel free to edit this code to support additional features
-		for (Entity entity : getEntities()) {
-			entity.draw();
-		}
+                        boolean isZom = in.next().equals(ZOMBIE_TOKEN_VALUE);
+                        double x = in.nextDouble();
+                        double y = in.nextDouble();
 
-		StdDraw.show(); // commit deferred drawing as a result of enabling double buffering
-	}
+                        if(isZom) {
+                                entities[i] = new Zombie(x,y);
+                                zomCount++;
+                        }
+                        else {
+                                entities[i] = new Nonzombie(x,y);
+                        }
+                        in.nextLine();
+                }
+        }
 
-	/**
-	 * Updates the entities for the current frame of the simulation given the amount
-	 * of time passed since the previous frame.
-	 * 
-	 * Note: some entities may be consumed and will not remain for future frames of
-	 * the simulation.
-	 * 
-	 * @param deltaTime the amount of time since the previous frame of the
-	 *                  simulation.
-	 */
-	public void update() {
-		// FIXME
-		throw new NotYetImplementedException();
-	}
+        /**
+         * @return the number of zombies in entities.
+         */
+        public int getZombieCount() {
+                return zomCount;
 
-	/**
-	 * Runs the zombie simulation.
-	 * 
-	 * @param args arguments from the command line
-	 * @throws FileNotFoundException 
-	 */
-	public static void main(String[] args) throws FileNotFoundException {
-		StdDraw.enableDoubleBuffering(); // reduce unpleasant drawing artifacts, speed things up
+        }
 
-		JFileChooser chooser = new JFileChooser("zombieSims");
-		chooser.showOpenDialog(null);
-		File f = new File(chooser.getSelectedFile().getPath());
-		Scanner in = new Scanner(f); //making Scanner with a File
 
-		ZombieSimulator zombieSimulator = new ZombieSimulator(in.nextInt());
-		zombieSimulator.readEntities(in);
+        /**
+         * @return the number of nonzombies in entities.
+         */
+        public int getNonzombieCount() {
+                return entities.length - getZombieCount();
+        }
 
-		double prevTime = Timing.getCurrentTimeInSeconds();
-		while (zombieSimulator.getNonzombieCount() >= 0) {
+        /**
+         * Draws a frame of the simulation.
+         */
+        public void draw() {
+                StdDraw.clear();
 
-			zombieSimulator.update();
-			zombieSimulator.draw();
+                // NOTE: feel free to edit this code to support additional features
+                for (Entity entity : getEntities()) {
+                        if(entity == null) continue;
+                        entity.draw();
+                }
 
-			StdDraw.pause(20);
+                StdDraw.show(); // commit deferred drawing as a result of enabling double buffering
+        }
 
-		}
-	}
+        /**
+         * Updates the entities for the current frame of the simulation given the amount
+         * of time passed since the previous frame.
+         *
+         * Note: some entities may be consumed and will not remain for future frames of
+         * the simulation.
+         *
+         * @param deltaTime the amount of time since the previous frame of the
+         *                  simulation.
+         */
+        public void update() {
+                for(int i = 0; i < entities.length; i++) {
+
+                        if(entities[i] != null && entities[i].isAlive()) { //avoid processing entities that has been consumed
+
+                                Entity updateEntity = entities[i].update(entities);
+
+                                entities[i] = updateEntity;
+                        }
+                }
+        } //ensures entity array remains accurate
+		// iterates through the entities array, checks if it's null or alive to avoid processing entities
+		// that have been consumed, updated by calling its update method, handles consumption, updates their state
+		// accordingly, ensures entity array remains accurate in the current simulation
+		// 
+        /**
+         * Runs the zombie simulation.
+         *
+         * @param args arguments from the command line
+         * @throws FileNotFoundException
+         */
+        public static void main(String[] args) throws FileNotFoundException {
+                StdDraw.enableDoubleBuffering(); // reduce unpleasant drawing artifacts, speed things up
+
+                JFileChooser chooser = new JFileChooser("zombieSims");
+                chooser.showOpenDialog(null);
+                File f = new File(chooser.getSelectedFile().getPath());
+                Scanner in = new Scanner(f); //making Scanner with a File
+
+                ZombieSimulator zombieSimulator = new ZombieSimulator(in.nextInt());
+                zombieSimulator.readEntities(in);
+
+                double prevTime = Timing.getCurrentTimeInSeconds();
+                while (zombieSimulator.getNonzombieCount() >= 0) {
+
+                        zombieSimulator.update();
+                        zombieSimulator.draw();
+
+                        StdDraw.pause(20);
+
+                }
+        }
 }
